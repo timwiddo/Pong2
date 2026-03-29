@@ -25,7 +25,6 @@ add_executable(
 	src/entities/Paddle.cpp
 	src/entities/Ball.cpp
 	src/ui/ScoreBoard.cpp
-		src/game/Game.cpp
 )
 
 target_include_directories(Pong2 PRIVATE include)

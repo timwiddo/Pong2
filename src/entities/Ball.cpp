@@ -6,8 +6,8 @@
 #include "entities/Paddle.h"
 
 namespace {
-constexpr float kServeVerticalRatio = 0.58F;
-constexpr float kBounceSpeedMultiplier = 1.05F;
+constexpr float serveVerticalRatio = 0.58F;
+constexpr float bounceSpeedMultiplier = 1.05F;
 }  // namespace
 
 Ball::Ball(Vector2 startPosition, float radius, float baseSpeed)
@@ -39,10 +39,10 @@ void Ball::BounceFromPaddle(const Paddle& paddle, bool fromLeftPaddle) {
 
     if (fromLeftPaddle) {
         position_.x = paddleBounds.x + paddleBounds.width + radius_;
-        velocity_.x = std::fabs(velocity_.x) * kBounceSpeedMultiplier;
+        velocity_.x = std::fabs(velocity_.x) * bounceSpeedMultiplier;
     } else {
         position_.x = paddleBounds.x - radius_;
-        velocity_.x = -std::fabs(velocity_.x) * kBounceSpeedMultiplier;
+        velocity_.x = -std::fabs(velocity_.x) * bounceSpeedMultiplier;
     }
 
     const float halfHeight = paddleBounds.height * 0.5F;
@@ -78,7 +78,7 @@ Vector2 Ball::MakeServeVelocity(float horizontalDirection) const {
     const float verticalDirection = (GetRandomValue(0, 1) == 0) ? -1.0F : 1.0F;
     return Vector2{
         baseSpeed_ * horizontalDirection,
-        baseSpeed_ * kServeVerticalRatio * verticalDirection
+        baseSpeed_ * serveVerticalRatio * verticalDirection
     };
 }
 

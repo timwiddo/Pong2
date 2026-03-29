@@ -20,13 +20,20 @@ private:
     void UpdatePlaying(float deltaTime);
     void TryRestart();
     void Draw() const;
+    [[nodiscard]] Vector2 ScreenCenter() const;
+    void ServeFromCenter(float horizontalDirection);
+    void CenterPaddles();
+    void UpdatePlayerPaddle(float deltaTime);
+    void UpdateCpuPaddle(float deltaTime);
+    void HandleBallCollisions();
+    void HandleScoring();
 
     int screenWidth_{};
     int screenHeight_{};
 
-    Paddle player_;
-    Paddle cpu_;
-    Ball ball_;
+    Paddle playerPaddle_;
+    Paddle cpuPaddle_;
+    Ball pongBall_;
     ScoreBoard scoreBoard_;
     GameState gameState_{GameState::Playing};
 };
