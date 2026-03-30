@@ -5,7 +5,9 @@
 #include <cmath>
 
 namespace {
-constexpr int targetScore = 7;
+constexpr int targetScore = 3;
+constexpr int winCoins = 10;
+constexpr int lossCoins = 3;
 constexpr float playerSpeed = 520.0F;
 constexpr float cpuSpeed = 460.0F;
 constexpr float ballBaseSpeed = 680.0F;
@@ -140,6 +142,7 @@ void Game::UpdatePlaying(float deltaTime) {
     HandleScoring();
 
     if (scoreBoard_.HasWinner()) {
+        coins_ += scoreBoard_.PlayerWon() ? winCoins : lossCoins;
         gameState_ = GameState::GameOver;
     }
 }
@@ -284,6 +287,8 @@ void Game::Draw() const {
             DrawText("Press M or Esc for main menu", screenWidth_ / 2 - 168, screenHeight_ / 2 + 48, 22, Color{200, 200, 210, 255});
             break;
     }
+
+    DrawCoinsHud();
 }
 
 void Game::DrawMainMenu() const {
@@ -373,6 +378,14 @@ void Game::DrawPlaceholderScreen(const char* title) const {
     DrawText("Coming soon", screenWidth_ / 2 - 110, screenHeight_ / 2 - 12, 44, Color{190, 190, 210, 255});
     DrawText("Press Esc, Enter, or click to return", screenWidth_ / 2 - 210, screenHeight_ - 100, 26,
              Color{155, 155, 172, 255});
+}
+
+void Game::DrawCoinsHud() const {
+    const int circleX = screenWidth_ - 135;
+    const int circleY = 42;
+    DrawCircle(circleX, circleY, 16.0F, Color{246, 212, 66, 255});
+    DrawCircleLines(circleX, circleY, 16.0F, Color{255, 236, 120, 255});
+    DrawText(TextFormat("%d", coins_), screenWidth_ - 105, 25, 34, Color{246, 212, 66, 255});
 }
 
 Vector2 Game::ScreenCenter() const {
