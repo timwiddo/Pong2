@@ -50,6 +50,10 @@ void Ball::BounceFromPaddle(const Paddle& paddle, bool fromLeftPaddle) {
     velocity_.y = baseSpeed_ * impact;
 }
 
+void Ball::SetRadius(float radius) {
+    radius_ = radius;
+}
+
 void Ball::Draw(Color color) const {
     DrawCircleV(position_, radius_, color);
 }

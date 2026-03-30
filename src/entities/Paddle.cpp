@@ -14,6 +14,11 @@ void Paddle::SetY(float y) {
     bounds_.y = y;
 }
 
+void Paddle::SetHeight(float height, int screenHeight) {
+    bounds_.height = height;
+    bounds_.y = std::clamp(bounds_.y, 0.0F, static_cast<float>(screenHeight) - bounds_.height);
+}
+
 void Paddle::Draw(Color color) const {
     DrawRectangleRec(bounds_, color);
 }

@@ -14,12 +14,13 @@ Simple Pong game in C++ using raylib.
 
 - Home screen with `Play`, `Shop`, and `Settings`
 - `Play` starts a fresh Pong round
-- `Shop` and `Settings` are placeholder screens for now
+- `Shop` is a placeholder screen for now
+- `Settings` lets you adjust ball size and paddle size with capped ranges
 - Player paddle controls (`W/S` or `Up/Down`)
 - Basic CPU paddle AI
 - Ball collision with paddles and walls
 - Score tracking to 7 points
-- Pause menu (`Esc`) with resume or return to main menu
+- Pause menu (`P`) with resume or return to main menu
 
 ## Prerequisites
 
@@ -44,8 +45,11 @@ If you use a multi-config generator (for example Visual Studio), run `build\Debu
 - Start game: select `Play`
 - Move up: `W` or `Up Arrow`
 - Move down: `S` or `Down Arrow`
-- Pause / resume: `Esc`
+- Pause / resume: `P`
 - Pause option confirm: `Enter` or mouse click
+- Settings navigation: `W/S` or `Up/Down`
+- Settings value adjust: `A/D` or `Left/Right`
+- Leave settings: `M` or `Enter`
 - Return to main menu from game over: `M` or `Esc`
 - Restart after game over: `R`
 - Quit app: close window

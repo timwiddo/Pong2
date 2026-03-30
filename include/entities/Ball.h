@@ -13,6 +13,7 @@ public:
     void BounceFromTop();
     void BounceFromBottom(float screenHeight);
     void BounceFromPaddle(const Paddle& paddle, bool fromLeftPaddle);
+    void SetRadius(float radius);
     void Draw(Color color) const;
 
     [[nodiscard]] Rectangle Bounds() const;
