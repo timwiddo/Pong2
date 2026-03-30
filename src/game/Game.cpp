@@ -2,14 +2,16 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdlib>
 #include <cmath>
+#include <filesystem>
 #include <fstream>
+#include <string>
 
 namespace {
 constexpr int targetScore = 3;
 constexpr int winCoins = 10;
 constexpr int lossCoins = 3;
-constexpr const char* coinsSaveFilePath = "coins.dat";
 constexpr float playerSpeed = 520.0F;
 constexpr float cpuSpeed = 460.0F;
 constexpr float ballBaseSpeed = 680.0F;
@@ -29,6 +31,19 @@ constexpr float paddleHeightStep = 10.0F;
 constexpr int mainMenuOptionCount = 3;
 constexpr int pauseOptionCount = 2;
 constexpr int settingsOptionCount = 3;
+
+std::filesystem::path ResolveCoinsSaveFilePath() {
+    if (const char* localAppData = std::getenv("LOCALAPPDATA"); localAppData != nullptr && localAppData[0] != '\0') {
+        return std::filesystem::path(localAppData) / "Pong2" / "coins.dat";
+    }
+
+    if (const char* userProfile = std::getenv("USERPROFILE"); userProfile != nullptr && userProfile[0] != '\0') {
+        return std::filesystem::path(userProfile) / "Pong2" / "coins.dat";
+    }
+
+    // Last-resort fallback keeps the game functional in unusual environments.
+    return std::filesystem::path("coins.dat");
+}
 
 Rectangle MainMenuButtonBounds(const int index, const int screenWidth, const int screenHeight) {
     constexpr float buttonWidth = 340.0F;
@@ -395,7 +410,8 @@ void Game::DrawCoinsHud() const {
 }
 
 void Game::LoadCoinsFromFile() {
-    std::ifstream input(coinsSaveFilePath);
+    const std::filesystem::path savePath = ResolveCoinsSaveFilePath();
+    std::ifstream input(savePath);
     int loadedCoins = 0;
     if (input >> loadedCoins && loadedCoins >= 0) {
         coins_ = loadedCoins;
@@ -406,7 +422,13 @@ void Game::LoadCoinsFromFile() {
 }
 
 void Game::SaveCoinsToFile() const {
-    std::ofstream output(coinsSaveFilePath, std::ios::trunc);
+    const std::filesystem::path savePath = ResolveCoinsSaveFilePath();
+    if (savePath.has_parent_path()) {
+        std::error_code errorCode;
+        std::filesystem::create_directories(savePath.parent_path(), errorCode);
+    }
+
+    std::ofstream output(savePath, std::ios::trunc);
     if (output) {
         output << coins_;
     }
