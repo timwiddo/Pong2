@@ -24,6 +24,7 @@ private:
     void UpdateMainMenu();
     void UpdatePlaying(float deltaTime);
     void UpdatePaused();
+    void UpdateSettings();
     void UpdatePlaceholderScreen();
     void TryRestart();
     void StartNewRound();
@@ -32,6 +33,7 @@ private:
     void DrawMainMenu() const;
     void DrawGameplay() const;
     void DrawPausedOverlay() const;
+    void DrawSettings() const;
     void DrawPlaceholderScreen(const char* title) const;
     [[nodiscard]] Vector2 ScreenCenter() const;
     void ServeFromCenter(float horizontalDirection);
@@ -44,6 +46,9 @@ private:
     int screenWidth_{};
     int screenHeight_{};
 
+    float ballRadius_{20.0F};
+    float paddleHeight_{150.0F};
+
     Paddle playerPaddle_;
     Paddle cpuPaddle_;
     Ball pongBall_;
@@ -51,5 +56,6 @@ private:
     GameState gameState_{GameState::MainMenu};
     int mainMenuSelection_{};
     int pauseSelection_{};
+    int settingsSelection_{};
 };
 
