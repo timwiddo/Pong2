@@ -49,7 +49,8 @@ If you use a multi-config generator (for example Visual Studio), run `build\Debu
 - Pause option confirm: `Enter` or mouse click
 - Settings navigation: `W/S` or `Up/Down`
 - Settings value adjust: `A/D` or `Left/Right`
-- Leave settings: `M` or `Enter`
+- Settings reset to defaults: select `Reset to Default`, then `Enter` or `Space`
+- Leave settings: `M`
 - Return to main menu from game over: `M` or `Esc`
 - Restart after game over: `R`
 - Quit app: close window

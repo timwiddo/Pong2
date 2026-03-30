@@ -24,7 +24,7 @@ constexpr float paddleHeightStep = 10.0F;
 
 constexpr int mainMenuOptionCount = 3;
 constexpr int pauseOptionCount = 2;
-constexpr int settingsOptionCount = 2;
+constexpr int settingsOptionCount = 3;
 
 Rectangle MainMenuButtonBounds(const int index, const int screenWidth, const int screenHeight) {
     constexpr float buttonWidth = 340.0F;
@@ -194,15 +194,31 @@ void Game::UpdateSettings() {
         if (settingsSelection_ == 0) {
             ballRadius_ = std::clamp(ballRadius_ + delta * ballRadiusStep, minBallRadius, maxBallRadius);
             pongBall_.SetRadius(ballRadius_);
-        } else {
+        } else if (settingsSelection_ == 1) {
             paddleHeight_ = std::clamp(paddleHeight_ + delta * paddleHeightStep, minPaddleHeight, maxPaddleHeight);
+            playerPaddle_.SetHeight(paddleHeight_, screenHeight_);
+            cpuPaddle_.SetHeight(paddleHeight_, screenHeight_);
+            CenterPaddles();
+        } else {
+            ballRadius_ = defaultBallRadius;
+            paddleHeight_ = defaultPaddleHeight;
+            pongBall_.SetRadius(ballRadius_);
             playerPaddle_.SetHeight(paddleHeight_, screenHeight_);
             cpuPaddle_.SetHeight(paddleHeight_, screenHeight_);
             CenterPaddles();
         }
     }
 
-    if (IsKeyPressed(KEY_M) || IsKeyPressed(KEY_ENTER)) {
+    if ((settingsSelection_ == 2) && (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))) {
+        ballRadius_ = defaultBallRadius;
+        paddleHeight_ = defaultPaddleHeight;
+        pongBall_.SetRadius(ballRadius_);
+        playerPaddle_.SetHeight(paddleHeight_, screenHeight_);
+        cpuPaddle_.SetHeight(paddleHeight_, screenHeight_);
+        CenterPaddles();
+    }
+
+    if (IsKeyPressed(KEY_M)) {
         ReturnToMainMenu();
     }
 }
@@ -325,6 +341,7 @@ void Game::DrawSettings() const {
 
     const bool ballSelected = settingsSelection_ == 0;
     const bool paddleSelected = settingsSelection_ == 1;
+    const bool resetSelected = settingsSelection_ == 2;
 
     const Rectangle ballRow{screenWidth_ * 0.5F - 250.0F, 260.0F, 500.0F, 76.0F};
     DrawRectangleRec(ballRow, ballSelected ? Color{80, 120, 220, 255} : Color{45, 45, 60, 255});
@@ -338,11 +355,17 @@ void Game::DrawSettings() const {
     DrawText(TextFormat("Paddle Size: %.0f", paddleHeight_), static_cast<int>(paddleRow.x) + 20, static_cast<int>(paddleRow.y) + 22, 34,
              paddleSelected ? RAYWHITE : Color{220, 220, 230, 255});
 
-    DrawText(TextFormat("Ball range: %.0f - %.0f", minBallRadius, maxBallRadius), screenWidth_ / 2 - 145, 470, 24,
+    const Rectangle resetRow{screenWidth_ * 0.5F - 250.0F, 456.0F, 500.0F, 76.0F};
+    DrawRectangleRec(resetRow, resetSelected ? Color{80, 120, 220, 255} : Color{45, 45, 60, 255});
+    DrawRectangleLinesEx(resetRow, 2.0F, resetSelected ? RAYWHITE : Color{90, 90, 110, 255});
+    DrawText("Reset to Default", static_cast<int>(resetRow.x) + 20, static_cast<int>(resetRow.y) + 22, 34,
+             resetSelected ? RAYWHITE : Color{220, 220, 230, 255});
+
+    DrawText(TextFormat("Ball range: %.0f - %.0f", minBallRadius, maxBallRadius), screenWidth_ / 2 - 145, 552, 24,
              Color{170, 170, 188, 255});
-    DrawText(TextFormat("Paddle range: %.0f - %.0f", minPaddleHeight, maxPaddleHeight), screenWidth_ / 2 - 165, 505, 24,
+    DrawText(TextFormat("Paddle range: %.0f - %.0f", minPaddleHeight, maxPaddleHeight), screenWidth_ / 2 - 165, 585, 24,
              Color{170, 170, 188, 255});
-    DrawText("Press M or Enter to go back", screenWidth_ / 2 - 165, screenHeight_ - 95, 24, Color{155, 155, 172, 255});
+    DrawText("Enter/Space on reset; M to go back", screenWidth_ / 2 - 205, screenHeight_ - 95, 24, Color{155, 155, 172, 255});
 }
 
 void Game::DrawPlaceholderScreen(const char* title) const {
