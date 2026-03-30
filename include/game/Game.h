@@ -36,6 +36,8 @@ private:
     void DrawSettings() const;
     void DrawPlaceholderScreen(const char* title) const;
     void DrawCoinsHud() const;
+    void LoadCoinsFromFile();
+    void SaveCoinsToFile() const;
     [[nodiscard]] Vector2 ScreenCenter() const;
     void ServeFromCenter(float horizontalDirection);
     void CenterPaddles();

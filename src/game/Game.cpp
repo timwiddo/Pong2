@@ -3,11 +3,13 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <fstream>
 
 namespace {
 constexpr int targetScore = 3;
 constexpr int winCoins = 10;
 constexpr int lossCoins = 3;
+constexpr const char* coinsSaveFilePath = "coins.dat";
 constexpr float playerSpeed = 520.0F;
 constexpr float cpuSpeed = 460.0F;
 constexpr float ballBaseSpeed = 680.0F;
@@ -64,6 +66,7 @@ Game::Game(const int screenWidth, const int screenHeight)
       scoreBoard_(targetScore) {
     CenterPaddles();
     ServeFromCenter((GetRandomValue(0, 1) == 0) ? -1.0F : 1.0F);
+    LoadCoinsFromFile();
 }
 
 void Game::Run() {
@@ -74,6 +77,8 @@ void Game::Run() {
         Draw();
         EndDrawing();
     }
+
+    SaveCoinsToFile();
 }
 
 void Game::Update(float deltaTime) {
@@ -143,6 +148,7 @@ void Game::UpdatePlaying(float deltaTime) {
 
     if (scoreBoard_.HasWinner()) {
         coins_ += scoreBoard_.PlayerWon() ? winCoins : lossCoins;
+        SaveCoinsToFile();
         gameState_ = GameState::GameOver;
     }
 }
@@ -386,6 +392,24 @@ void Game::DrawCoinsHud() const {
     DrawCircle(circleX, circleY, 16.0F, Color{246, 212, 66, 255});
     DrawCircleLines(circleX, circleY, 16.0F, Color{255, 236, 120, 255});
     DrawText(TextFormat("%d", coins_), screenWidth_ - 105, 25, 34, Color{246, 212, 66, 255});
+}
+
+void Game::LoadCoinsFromFile() {
+    std::ifstream input(coinsSaveFilePath);
+    int loadedCoins = 0;
+    if (input >> loadedCoins && loadedCoins >= 0) {
+        coins_ = loadedCoins;
+        return;
+    }
+
+    coins_ = 0;
+}
+
+void Game::SaveCoinsToFile() const {
+    std::ofstream output(coinsSaveFilePath, std::ios::trunc);
+    if (output) {
+        output << coins_;
+    }
 }
 
 Vector2 Game::ScreenCenter() const {
