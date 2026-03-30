@@ -5,7 +5,11 @@
 #include "ui/ScoreBoard.h"
 
 enum class GameState {
+    MainMenu,
     Playing,
+    Paused,
+    Shop,
+    Settings,
     GameOver
 };
 
@@ -17,9 +21,18 @@ public:
 
 private:
     void Update(float deltaTime);
+    void UpdateMainMenu();
     void UpdatePlaying(float deltaTime);
+    void UpdatePaused();
+    void UpdatePlaceholderScreen();
     void TryRestart();
+    void StartNewRound();
+    void ReturnToMainMenu();
     void Draw() const;
+    void DrawMainMenu() const;
+    void DrawGameplay() const;
+    void DrawPausedOverlay() const;
+    void DrawPlaceholderScreen(const char* title) const;
     [[nodiscard]] Vector2 ScreenCenter() const;
     void ServeFromCenter(float horizontalDirection);
     void CenterPaddles();
@@ -35,6 +48,8 @@ private:
     Paddle cpuPaddle_;
     Ball pongBall_;
     ScoreBoard scoreBoard_;
-    GameState gameState_{GameState::Playing};
+    GameState gameState_{GameState::MainMenu};
+    int mainMenuSelection_{};
+    int pauseSelection_{};
 };
 
