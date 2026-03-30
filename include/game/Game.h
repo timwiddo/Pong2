@@ -35,6 +35,9 @@ private:
     void DrawPausedOverlay() const;
     void DrawSettings() const;
     void DrawPlaceholderScreen(const char* title) const;
+    void DrawCoinsHud() const;
+    void LoadCoinsFromFile();
+    void SaveCoinsToFile() const;
     [[nodiscard]] Vector2 ScreenCenter() const;
     void ServeFromCenter(float horizontalDirection);
     void CenterPaddles();
@@ -57,5 +60,6 @@ private:
     int mainMenuSelection_{};
     int pauseSelection_{};
     int settingsSelection_{};
+    int coins_{};
 };
 

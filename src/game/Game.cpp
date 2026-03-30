@@ -2,10 +2,16 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdlib>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <string>
 
 namespace {
-constexpr int targetScore = 7;
+constexpr int targetScore = 3;
+constexpr int winCoins = 10;
+constexpr int lossCoins = 3;
 constexpr float playerSpeed = 520.0F;
 constexpr float cpuSpeed = 460.0F;
 constexpr float ballBaseSpeed = 680.0F;
@@ -25,6 +31,19 @@ constexpr float paddleHeightStep = 10.0F;
 constexpr int mainMenuOptionCount = 3;
 constexpr int pauseOptionCount = 2;
 constexpr int settingsOptionCount = 3;
+
+std::filesystem::path ResolveCoinsSaveFilePath() {
+    if (const char* localAppData = std::getenv("LOCALAPPDATA"); localAppData != nullptr && localAppData[0] != '\0') {
+        return std::filesystem::path(localAppData) / "Pong2" / "coins.dat";
+    }
+
+    if (const char* userProfile = std::getenv("USERPROFILE"); userProfile != nullptr && userProfile[0] != '\0') {
+        return std::filesystem::path(userProfile) / "Pong2" / "coins.dat";
+    }
+
+    // Last-resort fallback keeps the game functional in unusual environments.
+    return std::filesystem::path("coins.dat");
+}
 
 Rectangle MainMenuButtonBounds(const int index, const int screenWidth, const int screenHeight) {
     constexpr float buttonWidth = 340.0F;
@@ -62,6 +81,7 @@ Game::Game(const int screenWidth, const int screenHeight)
       scoreBoard_(targetScore) {
     CenterPaddles();
     ServeFromCenter((GetRandomValue(0, 1) == 0) ? -1.0F : 1.0F);
+    LoadCoinsFromFile();
 }
 
 void Game::Run() {
@@ -72,6 +92,8 @@ void Game::Run() {
         Draw();
         EndDrawing();
     }
+
+    SaveCoinsToFile();
 }
 
 void Game::Update(float deltaTime) {
@@ -140,6 +162,8 @@ void Game::UpdatePlaying(float deltaTime) {
     HandleScoring();
 
     if (scoreBoard_.HasWinner()) {
+        coins_ += scoreBoard_.PlayerWon() ? winCoins : lossCoins;
+        SaveCoinsToFile();
         gameState_ = GameState::GameOver;
     }
 }
@@ -284,6 +308,8 @@ void Game::Draw() const {
             DrawText("Press M or Esc for main menu", screenWidth_ / 2 - 168, screenHeight_ / 2 + 48, 22, Color{200, 200, 210, 255});
             break;
     }
+
+    DrawCoinsHud();
 }
 
 void Game::DrawMainMenu() const {
@@ -373,6 +399,39 @@ void Game::DrawPlaceholderScreen(const char* title) const {
     DrawText("Coming soon", screenWidth_ / 2 - 110, screenHeight_ / 2 - 12, 44, Color{190, 190, 210, 255});
     DrawText("Press Esc, Enter, or click to return", screenWidth_ / 2 - 210, screenHeight_ - 100, 26,
              Color{155, 155, 172, 255});
+}
+
+void Game::DrawCoinsHud() const {
+    const int circleX = screenWidth_ - 135;
+    const int circleY = 42;
+    DrawCircle(circleX, circleY, 16.0F, Color{246, 212, 66, 255});
+    DrawCircleLines(circleX, circleY, 16.0F, Color{255, 236, 120, 255});
+    DrawText(TextFormat("%d", coins_), screenWidth_ - 105, 25, 34, Color{246, 212, 66, 255});
+}
+
+void Game::LoadCoinsFromFile() {
+    const std::filesystem::path savePath = ResolveCoinsSaveFilePath();
+    std::ifstream input(savePath);
+    int loadedCoins = 0;
+    if (input >> loadedCoins && loadedCoins >= 0) {
+        coins_ = loadedCoins;
+        return;
+    }
+
+    coins_ = 0;
+}
+
+void Game::SaveCoinsToFile() const {
+    const std::filesystem::path savePath = ResolveCoinsSaveFilePath();
+    if (savePath.has_parent_path()) {
+        std::error_code errorCode;
+        std::filesystem::create_directories(savePath.parent_path(), errorCode);
+    }
+
+    std::ofstream output(savePath, std::ios::trunc);
+    if (output) {
+        output << coins_;
+    }
 }
 
 Vector2 Game::ScreenCenter() const {
