@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include "entities/Ball.h"
 #include "entities/Paddle.h"
 #include "ui/ScoreBoard.h"
@@ -24,6 +26,7 @@ private:
     void UpdateMainMenu();
     void UpdatePlaying(float deltaTime);
     void UpdatePaused();
+    void UpdateShop();
     void UpdateSettings();
     void UpdatePlaceholderScreen();
     void TryRestart();
@@ -33,6 +36,7 @@ private:
     void DrawMainMenu() const;
     void DrawGameplay() const;
     void DrawPausedOverlay() const;
+    void DrawShop() const;
     void DrawSettings() const;
     void DrawPlaceholderScreen(const char* title) const;
     void DrawCoinsHud() const;
@@ -61,5 +65,19 @@ private:
     int pauseSelection_{};
     int settingsSelection_{};
     int coins_{};
+
+    // Shop state
+    int shopCategory_{};
+    int shopItemSel_{};
+
+    // Active skin indices
+    int activeFieldSkin_{};
+    int activePaddleSkin_{};
+    int activeBallSkin_{};
+
+    // Ownership: first skin of each category is free and always owned
+    std::array<bool, 4> fieldOwned_{true, false, false, false};
+    std::array<bool, 4> paddleOwned_{true, false, false, false};
+    std::array<bool, 4> ballOwned_{true, false, false, false};
 };
 

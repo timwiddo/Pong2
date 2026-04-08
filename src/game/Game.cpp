@@ -31,6 +31,44 @@ constexpr float paddleHeightStep = 10.0F;
 constexpr int mainMenuOptionCount = 3;
 constexpr int pauseOptionCount = 2;
 constexpr int settingsOptionCount = 3;
+constexpr int shopCategoryCount = 3;
+constexpr int skinCount = 4;
+
+struct Skin {
+    const char* name;
+    Color color;
+    int price;
+};
+
+constexpr std::array<Skin, skinCount> fieldSkins = {{
+    {"Dark",    {18,  18,  24,  255},  0},
+    {"Navy",    {10,  15,  50,  255}, 15},
+    {"Forest",  {8,   35,  15,  255}, 15},
+    {"Crimson", {42,  8,   10,  255}, 20},
+}};
+
+constexpr std::array<Skin, skinCount> paddleSkins = {{
+    {"White",  {230, 230, 230, 255},  0},
+    {"Gold",   {246, 212, 66,  255}, 20},
+    {"Cyan",   {80,  220, 240, 255}, 25},
+    {"Lime",   {120, 240, 100, 255}, 25},
+}};
+
+constexpr std::array<Skin, skinCount> ballSkins = {{
+    {"Amber",  {235, 180, 80,  255},  0},
+    {"Red",    {240, 80,  80,  255}, 20},
+    {"Purple", {180, 80,  240, 255}, 25},
+    {"Ice",    {130, 220, 255, 255}, 20},
+}};
+
+Color DeriveLineColor(Color bg) {
+    return Color{
+        static_cast<unsigned char>(std::min(static_cast<int>(bg.r) + 35, 255)),
+        static_cast<unsigned char>(std::min(static_cast<int>(bg.g) + 35, 255)),
+        static_cast<unsigned char>(std::min(static_cast<int>(bg.b) + 45, 255)),
+        255
+    };
+}
 
 std::filesystem::path ResolveCoinsSaveFilePath() {
     if (const char* localAppData = std::getenv("LOCALAPPDATA"); localAppData != nullptr && localAppData[0] != '\0') {
@@ -67,6 +105,25 @@ Rectangle PauseButtonBounds(const int index, const int screenWidth, const int sc
     const float x = screenWidth * 0.5F - buttonWidth * 0.5F;
     const float y = startY + index * (buttonHeight + spacing);
     return Rectangle{x, y, buttonWidth, buttonHeight};
+}
+
+Rectangle ShopTabBounds(const int index, const int screenWidth) {
+    constexpr float tabWidth = 200.0F;
+    constexpr float tabHeight = 56.0F;
+    constexpr float spacing = 16.0F;
+
+    const float totalWidth = shopCategoryCount * tabWidth + (shopCategoryCount - 1) * spacing;
+    const float startX = screenWidth * 0.5F - totalWidth * 0.5F;
+    return Rectangle{startX + index * (tabWidth + spacing), 210.0F, tabWidth, tabHeight};
+}
+
+Rectangle ShopItemBounds(const int index, const int screenWidth) {
+    constexpr float itemWidth = 620.0F;
+    constexpr float itemHeight = 74.0F;
+    constexpr float spacing = 12.0F;
+    constexpr float startY = 300.0F;
+
+    return Rectangle{screenWidth * 0.5F - itemWidth * 0.5F, startY + index * (itemHeight + spacing), itemWidth, itemHeight};
 }
 }  // namespace
 
@@ -113,7 +170,7 @@ void Game::Update(float deltaTime) {
             UpdatePaused();
             break;
         case GameState::Shop:
-            UpdatePlaceholderScreen();
+            UpdateShop();
             break;
         case GameState::Settings:
             UpdateSettings();
@@ -195,6 +252,91 @@ void Game::UpdatePaused() {
     if (pauseSelection_ == 0) {
         gameState_ = GameState::Playing;
     } else {
+        ReturnToMainMenu();
+    }
+}
+
+void Game::UpdateShop() {
+    // Keyboard: switch category with A/D
+    if (IsKeyPressed(KEY_A) || IsKeyPressed(KEY_LEFT)) {
+        shopCategory_ = (shopCategory_ - 1 + shopCategoryCount) % shopCategoryCount;
+        shopItemSel_ = 0;
+    }
+    if (IsKeyPressed(KEY_D) || IsKeyPressed(KEY_RIGHT)) {
+        shopCategory_ = (shopCategory_ + 1) % shopCategoryCount;
+        shopItemSel_ = 0;
+    }
+
+    // Keyboard: navigate items with W/S
+    if (IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)) {
+        shopItemSel_ = (shopItemSel_ - 1 + skinCount) % skinCount;
+    }
+    if (IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)) {
+        shopItemSel_ = (shopItemSel_ + 1) % skinCount;
+    }
+
+    // Mouse: hover over tabs to switch category
+    const Vector2 mousePos = GetMousePosition();
+    for (int i = 0; i < shopCategoryCount; ++i) {
+        if (CheckCollisionPointRec(mousePos, ShopTabBounds(i, screenWidth_))) {
+            if (shopCategory_ != i) {
+                shopCategory_ = i;
+                shopItemSel_ = 0;
+            }
+        }
+    }
+
+    // Mouse: hover over items to highlight
+    for (int i = 0; i < skinCount; ++i) {
+        if (CheckCollisionPointRec(mousePos, ShopItemBounds(i, screenWidth_))) {
+            shopItemSel_ = i;
+        }
+    }
+
+    // Action: buy or equip via keyboard or item click
+    bool actionTriggered = IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE);
+    if (!actionTriggered && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        for (int i = 0; i < skinCount; ++i) {
+            if (CheckCollisionPointRec(mousePos, ShopItemBounds(i, screenWidth_))) {
+                actionTriggered = true;
+                break;
+            }
+        }
+    }
+
+    if (actionTriggered) {
+        bool* ownedPtr = nullptr;
+        int* activePtr = nullptr;
+        const Skin* skinsPtr = nullptr;
+        if (shopCategory_ == 0) {
+            ownedPtr = fieldOwned_.data();
+            activePtr = &activeFieldSkin_;
+            skinsPtr = fieldSkins.data();
+        } else if (shopCategory_ == 1) {
+            ownedPtr = paddleOwned_.data();
+            activePtr = &activePaddleSkin_;
+            skinsPtr = paddleSkins.data();
+        } else {
+            ownedPtr = ballOwned_.data();
+            activePtr = &activeBallSkin_;
+            skinsPtr = ballSkins.data();
+        }
+
+        if (!ownedPtr[shopItemSel_]) {
+            if (coins_ >= skinsPtr[shopItemSel_].price) {
+                coins_ -= skinsPtr[shopItemSel_].price;
+                ownedPtr[shopItemSel_] = true;
+                *activePtr = shopItemSel_;
+                SaveCoinsToFile();
+            }
+        } else {
+            *activePtr = shopItemSel_;
+            SaveCoinsToFile();
+        }
+    }
+
+    // Back to main menu
+    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_M)) {
         ReturnToMainMenu();
     }
 }
@@ -281,14 +423,14 @@ void Game::ReturnToMainMenu() {
 }
 
 void Game::Draw() const {
-    ClearBackground(Color{18, 18, 24, 255});
+    ClearBackground(fieldSkins[activeFieldSkin_].color);
 
     switch (gameState_) {
         case GameState::MainMenu:
             DrawMainMenu();
             break;
         case GameState::Shop:
-            DrawPlaceholderScreen("Shop");
+            DrawShop();
             break;
         case GameState::Settings:
             DrawSettings();
@@ -333,10 +475,10 @@ void Game::DrawMainMenu() const {
 }
 
 void Game::DrawGameplay() const {
-    DrawLine(screenWidth_ / 2, 0, screenWidth_ / 2, screenHeight_, Color{50, 50, 70, 255});
-    playerPaddle_.Draw(Color{230, 230, 230, 255});
-    cpuPaddle_.Draw(Color{230, 230, 230, 255});
-    pongBall_.Draw(Color{235, 180, 80, 255});
+    DrawLine(screenWidth_ / 2, 0, screenWidth_ / 2, screenHeight_, DeriveLineColor(fieldSkins[activeFieldSkin_].color));
+    playerPaddle_.Draw(paddleSkins[activePaddleSkin_].color);
+    cpuPaddle_.Draw(paddleSkins[activePaddleSkin_].color);
+    pongBall_.Draw(ballSkins[activeBallSkin_].color);
     scoreBoard_.Draw(screenWidth_);
 
     DrawText("W/S or UP/DOWN to move", 28, screenHeight_ - 72, 20, Color{160, 160, 170, 255});
@@ -359,6 +501,69 @@ void Game::DrawPausedOverlay() const {
     }
 
     DrawText("P resumes", screenWidth_ / 2 - 62, screenHeight_ / 2 + 192, 20, Color{180, 180, 190, 255});
+}
+
+void Game::DrawShop() const {
+    DrawText("Shop", screenWidth_ / 2 - 70, 110, 72, RAYWHITE);
+
+    // Category tabs
+    constexpr std::array<const char*, shopCategoryCount> categoryNames = {"Field", "Paddles", "Ball"};
+    for (int i = 0; i < shopCategoryCount; ++i) {
+        const Rectangle tab = ShopTabBounds(i, screenWidth_);
+        const bool selected = i == shopCategory_;
+        DrawRectangleRec(tab, selected ? Color{80, 120, 220, 255} : Color{45, 45, 60, 255});
+        DrawRectangleLinesEx(tab, 2.0F, selected ? RAYWHITE : Color{90, 90, 110, 255});
+        DrawText(categoryNames[i], static_cast<int>(tab.x) + 20, static_cast<int>(tab.y) + 14, 28,
+                 selected ? RAYWHITE : Color{220, 220, 230, 255});
+    }
+
+    // Determine skins and state for the active category
+    const Skin* skins = nullptr;
+    const bool* owned = nullptr;
+    int activeIndex = 0;
+    if (shopCategory_ == 0) {
+        skins = fieldSkins.data();
+        owned = fieldOwned_.data();
+        activeIndex = activeFieldSkin_;
+    } else if (shopCategory_ == 1) {
+        skins = paddleSkins.data();
+        owned = paddleOwned_.data();
+        activeIndex = activePaddleSkin_;
+    } else {
+        skins = ballSkins.data();
+        owned = ballOwned_.data();
+        activeIndex = activeBallSkin_;
+    }
+
+    // Draw item rows
+    for (int i = 0; i < skinCount; ++i) {
+        const Rectangle row = ShopItemBounds(i, screenWidth_);
+        const bool selected = i == shopItemSel_;
+        DrawRectangleRec(row, selected ? Color{60, 100, 200, 255} : Color{45, 45, 60, 255});
+        DrawRectangleLinesEx(row, 2.0F, selected ? RAYWHITE : Color{90, 90, 110, 255});
+
+        // Color preview swatch
+        DrawRectangle(static_cast<int>(row.x) + 14, static_cast<int>(row.y) + 15, 44, 44, skins[i].color);
+        DrawRectangleLines(static_cast<int>(row.x) + 14, static_cast<int>(row.y) + 15, 44, 44,
+                           selected ? RAYWHITE : Color{150, 150, 160, 255});
+
+        // Skin name
+        DrawText(skins[i].name, static_cast<int>(row.x) + 72, static_cast<int>(row.y) + 21, 30,
+                 selected ? RAYWHITE : Color{220, 220, 230, 255});
+
+        // Status label
+        if (i == activeIndex) {
+            DrawText("ACTIVE", static_cast<int>(row.x) + 450, static_cast<int>(row.y) + 23, 26, Color{100, 220, 100, 255});
+        } else if (owned[i]) {
+            DrawText("OWNED", static_cast<int>(row.x) + 450, static_cast<int>(row.y) + 23, 26, Color{160, 160, 190, 255});
+        } else {
+            DrawText(TextFormat("%d coins", skins[i].price), static_cast<int>(row.x) + 420, static_cast<int>(row.y) + 23, 26,
+                     coins_ >= skins[i].price ? Color{246, 212, 66, 255} : Color{180, 100, 100, 255});
+        }
+    }
+
+    DrawText("A/D - category   W/S - select   Enter - buy/equip   Esc/M - back",
+             screenWidth_ / 2 - 380, screenHeight_ - 90, 22, Color{155, 155, 172, 255});
 }
 
 void Game::DrawSettings() const {
@@ -413,12 +618,39 @@ void Game::LoadCoinsFromFile() {
     const std::filesystem::path savePath = ResolveCoinsSaveFilePath();
     std::ifstream input(savePath);
     int loadedCoins = 0;
-    if (input >> loadedCoins && loadedCoins >= 0) {
-        coins_ = loadedCoins;
+    if (!(input >> loadedCoins) || loadedCoins < 0) {
+        coins_ = 0;
         return;
     }
+    coins_ = loadedCoins;
 
-    coins_ = 0;
+    // Active skin indices (optional — missing in older save files)
+    int af = 0, ap = 0, ab = 0;
+    if (input >> af >> ap >> ab) {
+        activeFieldSkin_  = std::clamp(af, 0, skinCount - 1);
+        activePaddleSkin_ = std::clamp(ap, 0, skinCount - 1);
+        activeBallSkin_   = std::clamp(ab, 0, skinCount - 1);
+    }
+
+    // Ownership arrays (optional)
+    auto loadOwned = [&](std::array<bool, skinCount>& arr) {
+        arr.fill(false);
+        for (int i = 0; i < skinCount; ++i) {
+            int v = 0;
+            if (input >> v) {
+                arr[i] = (v != 0);
+            }
+        }
+        arr[0] = true; // first skin is always owned
+    };
+    loadOwned(fieldOwned_);
+    loadOwned(paddleOwned_);
+    loadOwned(ballOwned_);
+
+    // Validate active indices point to owned skins
+    if (!fieldOwned_[activeFieldSkin_])   activeFieldSkin_  = 0;
+    if (!paddleOwned_[activePaddleSkin_]) activePaddleSkin_ = 0;
+    if (!ballOwned_[activeBallSkin_])     activeBallSkin_   = 0;
 }
 
 void Game::SaveCoinsToFile() const {
@@ -429,9 +661,23 @@ void Game::SaveCoinsToFile() const {
     }
 
     std::ofstream output(savePath, std::ios::trunc);
-    if (output) {
-        output << coins_;
+    if (!output) {
+        return;
     }
+
+    output << coins_ << "\n";
+    output << activeFieldSkin_ << " " << activePaddleSkin_ << " " << activeBallSkin_ << "\n";
+
+    auto saveOwned = [&](const std::array<bool, skinCount>& arr) {
+        for (int i = 0; i < skinCount; ++i) {
+            output << (arr[i] ? 1 : 0);
+            if (i < skinCount - 1) { output << " "; }
+        }
+        output << "\n";
+    };
+    saveOwned(fieldOwned_);
+    saveOwned(paddleOwned_);
+    saveOwned(ballOwned_);
 }
 
 Vector2 Game::ScreenCenter() const {
